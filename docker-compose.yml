@@ -1,0 +1,50 @@
+version: '3'
+
+services:
+
+  postgres-master:
+      image: jackson/postgres-master
+      container_name: postgres-master
+      build:
+        context: .
+        target: Master
+      environment:
+        POSTGRES_USER: ${POSTGRES_USER_MASTER}
+        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_MASTER}
+        POSTGRES_DB: ${POSTGRES_DB_MASTER}
+      volumes:
+        - $DATA_STORAGE/master:/var/lib/postgresql/data/
+      networks:
+        rede:
+          ipv4_address: 10.0.0.2
+
+  postgres-replica:
+    image: jackson/postgres-replica
+    container_name: postgres-replica
+    build:
+      context: .
+      target: Replica
+      args:
+        BROKER: ${BROKER}
+        USER_REPLICA: ${POSTGRES_USER_REPLICA}
+        DB_REPLICA: ${POSTGRES_DB_REPLICA}
+        TOPIC: ${KAFKA_TOPIC}
+    environment:
+        POSTGRES_USER: ${POSTGRES_USER_REPLICA}
+        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_REPLICA}
+        POSTGRES_DB: ${POSTGRES_DB_REPLICA}
+    volumes:
+      - $DATA_STORAGE/replica:/var/lib/postgresql/data/
+    links:
+      - "postgres-master"
+
+    networks:
+      rede:
+        ipv4_address: 10.0.0.3
+
+networks:
+  rede:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.0.0.0/16
